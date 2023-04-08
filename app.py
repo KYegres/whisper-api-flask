@@ -8,9 +8,6 @@ import torch
 torch.cuda.is_available()
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Load the Whisper model:
-model = whisper.load_model("base", device=DEVICE)
-
 app = Flask(__name__)
 CORS(app)
 
@@ -28,6 +25,10 @@ def handler():
     # For each file, let's store the results in a list of dictionaries.
     results = []
 
+    # Load the Whisper model:
+    mode = request.args.get('mode', default = 'base', type = str)
+    model = whisper.load_model(mode, device=DEVICE)
+    
     # Loop over every file that the user submitted.
     for filename, handle in request.files.items():
         # Create a temporary file.

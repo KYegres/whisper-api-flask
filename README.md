@@ -57,9 +57,6 @@ import torch
 torch.cuda.is_available()
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Load the Whisper model:
-model = whisper.load_model("base", device=DEVICE)
-
 app = Flask(__name__)
 ```
 3. Now we need to create a route that will accept a post request with a file in it.
@@ -80,6 +77,10 @@ def handler():
     # For each file, let's store the results in a list of dictionaries.
     results = []
 
+    mode = request.args.get('mode', default = 'base', type = str)
+    # Load the Whisper model:
+    model = whisper.load_model(mode, device=DEVICE)
+    
     # Loop over every file that the user submitted.
     for filename, handle in request.files.items():
         # Create a temporary file.
@@ -102,7 +103,7 @@ def handler():
 
 ## How to run the container?
 1. Open a terminal and navigate to the folder where you created the files.
-2. Run the following command to build the container:
+2. Run the following command to build the container (it took long time):
 
 ```bash
 docker build -t whisper-api .
@@ -113,12 +114,34 @@ docker build -t whisper-api .
 docker run -p 5000:5000 whisper-api
 ```
 
+To process audio whisper will download requested model (up to 2.8 Gb for large). So to avoid downloading for each run to start container againt use `docker start <container name>`  
+
 ## How to test the API?
 1. You can test the API by sending a POST request to the route `http://localhost:5000/whisper` with a file in it. Body should be form-data.
 2. You can use the following curl command to test the API:
 
 ```bash
-curl -F "file=@/path/to/file" http://localhost:5000/whisper
+curl -F "file=@/path/to/file" http://localhost:5000/whisper?mode=large
+```
+Or you can use powershell
+```powershell
+$FilePath = '.\source.mp3'
+$FieldName = 'file'
+$ContentType = 'audio/mpeg'
+
+$FileStream = [System.IO.FileStream]::new($filePath, [System.IO.FileMode]::Open)
+$FileHeader = [System.Net.Http.Headers.ContentDispositionHeaderValue]::new('form-data')
+$FileHeader.Name = $FieldName
+$FileHeader.FileName = Split-Path -leaf $FilePath
+$FileContent = [System.Net.Http.StreamContent]::new($FileStream)
+$FileContent.Headers.ContentDisposition = $FileHeader
+$FileContent.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::Parse($ContentType)
+
+$MultipartContent = [System.Net.Http.MultipartFormDataContent]::new()
+$MultipartContent.Add($FileContent)
+
+$r = Invoke-WebRequest -Body $MultipartContent -Method POST -Uri http://localhost:5000/whisper?mode=large
+[regex]::Unescape($r.Content)
 ```
 3. In result you should get a JSON object with the transcript in it.
 
