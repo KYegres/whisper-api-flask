@@ -103,7 +103,7 @@ def handler():
 
 ## How to run the container?
 1. Open a terminal and navigate to the folder where you created the files.
-2. Run the following command to build the container (it took long time):
+2. Run the following command to build the container (it took long time and will have huge size):
 
 ```bash
 docker build -t whisper-api .
@@ -111,10 +111,10 @@ docker build -t whisper-api .
 3. Run the following command to run the container:
 
 ```bash
-docker run -p 5000:5000 whisper-api
+docker run -p 5000:5000 --name whisper whisper-api
 ```
 
-To process audio whisper will download requested model (up to 2.8 Gb for large). So to avoid downloading for each run to start container againt use `docker start <container name>`  
+To process audio whisper will download requested model (up to 2.8 Gb for large model). So to avoid downloading for each run to start container againt use `docker start whisper`  
 
 ## How to test the API?
 1. You can test the API by sending a POST request to the route `http://localhost:5000/whisper` with a file in it. Body should be form-data.
